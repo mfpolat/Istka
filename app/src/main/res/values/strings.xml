@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Istka</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_register">RegisterActivity</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="please_login">Lütfen giriş yapınız.</string>
+    <string name="login">Giriş</string>
+    <string name="please_fill_areas">Lütfen alanları doldurunuz</string>
+    <string name="loading">Yükleniyor...</string>
+    <string name="general_error">Servise ulaşırken hata meydana geldi</string>
+    <string name="title_activity_info">InfoActivity</string>
+    <string name="afis">Afiş</string>
+    <string name="title_activity_afis">AfisActivity</string>
+</resources>
