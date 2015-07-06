@@ -6,15 +6,21 @@ package com.okuu.istkaafet;
 public class Doctor {
 
     private int id;
-    private int user_id;
-    private int tc;
-    private String ad;
-    private String soyad;
-    private int diploma_no;
-    private String hastane;
-    private String uzmanlik;
-    private String son_konum;
-    private String son_erisim_zamani;
+    private String citizen_id;
+    private String name;
+    private String lastname;
+    private String home_address;
+    private String job_address;
+    private String gsm_phone_number;
+    private String phone_number;
+    private String diploma_number;
+    private String diploma_date;
+    private int years_of_spec;
+    private double latitude;
+    private double longitude;
+    private String last_access;
+    private int clinical_id;
+    private int users_id;
 
     public int getId() {
         return id;
@@ -24,75 +30,123 @@ public class Doctor {
         this.id = id;
     }
 
-    public int getUser_id() {
-        return user_id;
+    public String getCitizen_id() {
+        return citizen_id;
     }
 
-    public void setUser_id(int user_id) {
-        this.user_id = user_id;
+    public void setCitizen_id(String citizen_id) {
+        this.citizen_id = citizen_id;
     }
 
-    public int getTc() {
-        return tc;
+    public String getName() {
+        return name;
     }
 
-    public void setTc(int tc) {
-        this.tc = tc;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getAd() {
-        return ad;
+    public String getLastname() {
+        return lastname;
     }
 
-    public void setAd(String ad) {
-        this.ad = ad;
+    public void setLastname(String lastname) {
+        this.lastname = lastname;
     }
 
-    public String getSoyad() {
-        return soyad;
+    public String getHome_address() {
+        return home_address;
     }
 
-    public void setSoyad(String soyad) {
-        this.soyad = soyad;
+    public void setHome_address(String home_address) {
+        this.home_address = home_address;
     }
 
-    public int getDiploma_no() {
-        return diploma_no;
+    public String getJob_address() {
+        return job_address;
     }
 
-    public void setDiploma_no(int diploma_no) {
-        this.diploma_no = diploma_no;
+    public void setJob_address(String job_address) {
+        this.job_address = job_address;
     }
 
-    public String getHastane() {
-        return hastane;
+    public String getGsm_phone_number() {
+        return gsm_phone_number;
     }
 
-    public void setHastane(String hastane) {
-        this.hastane = hastane;
+    public void setGsm_phone_number(String gsm_phone_number) {
+        this.gsm_phone_number = gsm_phone_number;
     }
 
-    public String getUzmanlik() {
-        return uzmanlik;
+    public String getPhone_number() {
+        return phone_number;
     }
 
-    public void setUzmanlik(String uzmanlik) {
-        this.uzmanlik = uzmanlik;
+    public void setPhone_number(String phone_number) {
+        this.phone_number = phone_number;
     }
 
-    public String getSon_konum() {
-        return son_konum;
+    public String getDiploma_number() {
+        return diploma_number;
     }
 
-    public void setSon_konum(String son_konum) {
-        this.son_konum = son_konum;
+    public void setDiploma_number(String diploma_number) {
+        this.diploma_number = diploma_number;
     }
 
-    public String getSon_erisim_zamani() {
-        return son_erisim_zamani;
+    public String getDiploma_date() {
+        return diploma_date;
     }
 
-    public void setSon_erisim_zamani(String son_erisim_zamani) {
-        this.son_erisim_zamani = son_erisim_zamani;
+    public void setDiploma_date(String diploma_date) {
+        this.diploma_date = diploma_date;
+    }
+
+    public int getYears_of_spec() {
+        return years_of_spec;
+    }
+
+    public void setYears_of_spec(int years_of_spec) {
+        this.years_of_spec = years_of_spec;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getLast_access() {
+        return last_access;
+    }
+
+    public void setLast_access(String last_access) {
+        this.last_access = last_access;
+    }
+
+    public int getClinical_id() {
+        return clinical_id;
+    }
+
+    public void setClinical_id(int clinical_id) {
+        this.clinical_id = clinical_id;
+    }
+
+    public int getUsers_id() {
+        return users_id;
+    }
+
+    public void setUsers_id(int users_id) {
+        this.users_id = users_id;
     }
 }

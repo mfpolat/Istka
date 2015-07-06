@@ -5,8 +5,9 @@ package com.okuu.istkaafet;
  */
 public class Constants {
 
-    public static final String SERVICE_BASE_URL="http://istanbul.afetehazir.org.tr/api/v1";
-    public  static  final String SERVICE_DOCTORS = "/doktors/{id}";
-    public  static  final String SERVICE_REGISTER = "http://istanbul.afetehazir.org.tr/admin/site/auth/register";
+    public static final String SERVICE_BASE_URL = "http://istanbul.afetehazir.org.tr/api/v1";
+    public static final String SERVICE_DOCTORS = "/doctors/{id}";
+    public static final String REGISTER_BAASE_URL = "http://istanbul.afetehazir.org.tr/admin/site/auth";
+    public static final String SERVICE_REGISTER = "/register";
 
 }

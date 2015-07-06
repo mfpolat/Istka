@@ -44,6 +44,7 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
         showLoginDialog();
         showOfflineMap();
     }
+
     private void initViews() {
         login_activity_service_message_tv = (TextView) findViewById(R.id.login_activity_service_message_tv);
         login_activity_online_tv = (TextView) findViewById(R.id.login_activity_online_tv);
@@ -56,8 +57,9 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
 
     private void setToolbar() {
         Toolbar toolbar = (android.support.v7.widget.Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("Login");
-        toolbar.setNavigationIcon(getResources().getDrawable(R.mipmap.ic_launcher));
+        toolbar.setTitle("");
+
+        toolbar.setNavigationIcon(getResources().getDrawable(R.mipmap.info));
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -89,7 +91,7 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
                             showWarning(getString(R.string.please_fill_areas));
                         } else {
                             dialog.dismiss();
-                            callRegister(1, 12345);
+                            callRegister(tcKimlikNo, passWord);
                         }
                     }
                 })
@@ -97,6 +99,7 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
         dialog.setCancelable(false);
         login_dialog_tc_et = (EditText) dialog.getCustomView().findViewById(R.id.login_dialog_tc_et);
         login_dialog_pass_et = (EditText) dialog.getCustomView().findViewById(R.id.login_dialog_pass_et);
+
 
         dialog.show();
 
@@ -107,7 +110,41 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
         snackbar.show();
     }
 
-    private void callRegister(int id, int accessToken) {
+    private void callRegister(String tcNo, String passWord) {
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
+        progressDialog.setTitle("");
+        progressDialog.setMessage(getString(R.string.loading));
+        progressDialog.show();
+
+        RestAdapter restAdapter = new RestAdapter.Builder()
+                .setEndpoint(Constants.REGISTER_BAASE_URL)
+                .setLogLevel(RestAdapter.LogLevel.FULL)
+                .build();
+        Service service = restAdapter.create(Service.class);
+        service.register(tcNo, passWord, new Callback<RegisterResponse>() {
+            @Override
+            public void success(RegisterResponse registerResponse, Response response) {
+                progressDialog.hide();
+                if(registerResponse == null){
+                    showWarning(getString(R.string.general_error));
+                    showLoginDialog();
+                    return;
+                }
+                String accessToken = registerResponse.getAccess_token();
+                int id = registerResponse.getDoctor_id();
+                callDoktorInfo(id, accessToken);
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                progressDialog.hide();
+            }
+        });
+
+    }
+
+    private void callDoktorInfo(int id, String accessToken) {
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
         progressDialog.setTitle("");
@@ -119,11 +156,12 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
                 .setLogLevel(RestAdapter.LogLevel.FULL)
                 .build();
         Service service = restAdapter.create(Service.class);
-        service.doctors(id, accessToken, new Callback<Doctor>() {
+        int token = Integer.parseInt(accessToken);
+        service.doctors(id, token, new Callback<Doctor>() {
             @Override
             public void success(Doctor doctor, Response response) {
                 progressDialog.dismiss();
-                String info = doctor.getAd() + " " + doctor.getSoyad() + " " + doctor.getHastane();
+                String info = doctor.getName() + " " + doctor.getLastname() + " ";
                 login_activity_service_message_tv.setText(login_activity_service_message_tv.getText().toString() + " " + info);
             }
 
@@ -155,6 +193,9 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
             Intent intent = new Intent(MainActivity.this, InfoActivity.class);
             startActivity(intent);
         }
+        if(id == R.id.action_logout){
+            showLoginDialog();
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -171,6 +212,7 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
             showOfflineMap();
         }
     }
+
     private void showOfflineMap() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         OfflineMapFragment offlineMapFragment = OfflineMapFragment.newInstance();
