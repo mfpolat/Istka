@@ -15,4 +15,6 @@ public interface Service {
 
     @GET(Constants.SERVICE_REGISTER)
     public void register (@Query("username") String userName,@Query("password") String password,Callback<RegisterResponse> response);
+    @GET(Constants.SERVICE_HOSPITALS)
+    public void getHospitals(@Query("access-token") int accesToken,Callback<HospitalsResponse> response);
 }
