@@ -27,13 +27,13 @@ import retrofit.client.Response;
 
 public class MainActivity extends ActionBarActivity implements Switch.OnCheckListener {
 
-    private TextView login_activity_service_message_tv;
+    private TextView login_activity_hospital_name_tv;
     private String tcKimlikNo;
     private String passWord;
     private EditText login_dialog_tc_et;
     private EditText login_dialog_pass_et;
     private Switch login_activity_on_off_switch;
-    private TextView login_activity_online_tv, login_activity_offline_tv;
+    private TextView login_activity_online_tv, login_activity_offline_tv, login_activity_doctor_name_tv;
     private DBHelper dbHelper;
 
     @Override
@@ -48,13 +48,14 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
     }
 
     private void initViews() {
-        login_activity_service_message_tv = (TextView) findViewById(R.id.login_activity_service_message_tv);
+        login_activity_hospital_name_tv = (TextView) findViewById(R.id.login_activity_hospital_name_tv);
         login_activity_online_tv = (TextView) findViewById(R.id.login_activity_online_tv);
         login_activity_online_tv.setSelected(false);
         login_activity_offline_tv = (TextView) findViewById(R.id.login_activity_offline_tv);
         login_activity_offline_tv.setTextIsSelectable(true);
         login_activity_on_off_switch = (Switch) findViewById(R.id.login_activity_on_off_switch);
         login_activity_on_off_switch.setOncheckListener(this);
+        login_activity_doctor_name_tv = (TextView) findViewById(R.id.login_activity_doctor_name_tv);
     }
 
     private void setToolbar() {
@@ -80,31 +81,33 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
                 .customView(R.layout.login_dialog, true)
                 .positiveColor(R.color.colorAccent)
                 .positiveText(getString(R.string.login))
-                .theme(Theme.LIGHT)
                 .cancelable(false)
                 .autoDismiss(false)
-
+                .theme(Theme.LIGHT)
                 .callback(new MaterialDialog.ButtonCallback() {
                     @Override
                     public void onPositive(MaterialDialog dialog) {
                         tcKimlikNo = login_dialog_tc_et.getText().toString();
                         passWord = login_dialog_pass_et.getText().toString();
-                        if (tcKimlikNo.isEmpty() || passWord.isEmpty()) {
-                            showWarning(getString(R.string.please_fill_areas));
-                        } else {
+                        if (!tcKimlikNo.trim().isEmpty() && !passWord.trim().isEmpty()) {
                             dialog.dismiss();
                             callRegister(tcKimlikNo, passWord);
+                        } else {
+                            showWarning(getString(R.string.please_fill_areas));
                         }
+//                        if (tcKimlikNo == null || passWord == null || tcKimlikNo == "" || passWord == "") {
+//                            showWarning(getString(R.string.please_fill_areas));
+//                        } else {
+//                            dialog.dismiss();
+//                            callRegister(tcKimlikNo, passWord);
+//                        }
                     }
                 })
                 .build();
         dialog.setCancelable(false);
         login_dialog_tc_et = (EditText) dialog.getCustomView().findViewById(R.id.login_dialog_tc_et);
         login_dialog_pass_et = (EditText) dialog.getCustomView().findViewById(R.id.login_dialog_pass_et);
-
-
         dialog.show();
-
     }
 
     private void showWarning(String message) {
@@ -129,7 +132,12 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
             public void success(RegisterResponse registerResponse, Response response) {
                 progressDialog.hide();
                 if (registerResponse == null) {
-                    showWarning(getString(R.string.general_error));
+                    showWarning(getString(R.string.login_error));
+                    showLoginDialog();
+                    return;
+                }
+                else if(registerResponse.getAccess_token() == null){
+                    showWarning(getString(R.string.login_error));
                     showLoginDialog();
                     return;
                 }
@@ -164,8 +172,11 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
             public void success(Doctor doctor, Response response) {
                 progressDialog.dismiss();
                 String info = doctor.getName() + " " + doctor.getLastname() + " ";
-                login_activity_service_message_tv.setText(login_activity_service_message_tv.getText().toString() + " " + info);
-                getHospitals(token);
+                login_activity_doctor_name_tv.setText(login_activity_doctor_name_tv.getText().toString() + " " + info);
+                if (dbHelper.didHospitalsSave()) {
+                    getAssignedHospital(doctor.getId(), token);
+                } else
+                    getHospitals(token);
             }
 
             @Override
@@ -173,6 +184,34 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
                 progressDialog.dismiss();
                 showWarning(getString(R.string.general_error));
                 int a = 0;
+            }
+        });
+    }
+
+    private void getAssignedHospital(int id, int token) {
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
+        progressDialog.setTitle("");
+        progressDialog.setMessage(getString(R.string.loading));
+        progressDialog.show();
+
+        RestAdapter restAdapter = new RestAdapter.Builder()
+                .setEndpoint(Constants.SERVICE_BASE_URL)
+                .setLogLevel(RestAdapter.LogLevel.FULL)
+                .build();
+        Service service = restAdapter.create(Service.class);
+        service.getAssigment(id, token, new Callback<AssigmentResponse>() {
+            @Override
+            public void success(AssigmentResponse assigmentResponse, Response response) {
+                progressDialog.hide();
+                Hospital assignedHospital = dbHelper.getHospitalById(assigmentResponse.getHospital_id());
+                login_activity_hospital_name_tv.setText(login_activity_hospital_name_tv.getText() + " " + assignedHospital.getName());
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                progressDialog.hide();
+                showWarning(getString(R.string.general_error));
             }
         });
     }

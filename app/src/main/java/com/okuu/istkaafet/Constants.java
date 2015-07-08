@@ -10,5 +10,6 @@ public class Constants {
     public static final String REGISTER_BAASE_URL = "http://istanbul.afetehazir.org.tr/admin/site/auth";
     public static final String SERVICE_REGISTER = "/register";
     public static final String SERVICE_HOSPITALS ="/hospitals";
+    public static final String SERVICE_ASSIGMENT="/assignments/{id}";
 
 }

@@ -64,18 +64,20 @@
         android:layout_alignParentLeft="true"
         android:padding="10dp">
         <TextView
+            android:id="@+id/login_activity_doctor_name_tv"
             android:textColor="@android:color/black"
             android:layout_gravity="center"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="İstka afet uyarı sistemi"/>
+            android:text="Doktor : "/>
         <TextView
-            android:id="@+id/login_activity_service_message_tv"
+            android:gravity="center"
+            android:id="@+id/login_activity_hospital_name_tv"
             android:layout_marginTop="10dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@android:color/black"
             android:layout_gravity="center"
-            android:text="Servis Mesajı : "/>
+            android:text="Hastane : "/>
     </LinearLayout>
 </RelativeLayout>

@@ -15,4 +15,5 @@
     <string name="title_activity_info">InfoActivity</string>
     <string name="afis">Afiş</string>
     <string name="title_activity_afis">AfisActivity</string>
+    <string name="login_error">Hatalı giriş yaptınız.</string>
 </resources>

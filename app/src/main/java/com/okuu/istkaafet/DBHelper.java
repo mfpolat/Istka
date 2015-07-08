@@ -6,6 +6,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.ArrayList;
+
 /**
  * Created by Fatih on 6.7.2015.
  */
@@ -63,5 +65,17 @@ public class DBHelper extends SQLiteOpenHelper {
             }
         }
         return hospital;
+    }
+
+    public boolean didHospitalsSave() {
+        boolean didHospitalSaved = false;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("select * from hospitals ", null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                didHospitalSaved = true;
+            }
+        }
+        return didHospitalSaved;
     }
 }
