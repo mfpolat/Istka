@@ -2,6 +2,7 @@ package com.okuu.istkaafet;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
 import com.okuu.istkaafet.InfoActivity;
 
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -35,6 +37,8 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
     private Switch login_activity_on_off_switch;
     private TextView login_activity_online_tv, login_activity_offline_tv, login_activity_doctor_name_tv;
     private DBHelper dbHelper;
+    private double hospitalLatitude, hospitalLongitute;
+    private static int accessToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,9 +46,21 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
         setContentView(R.layout.activity_main);
         initViews();
         setToolbar();
-        showLoginDialog();
-        showOfflineMap();
         dbHelper = new DBHelper(this);
+        accessToken = retriveAccessToken();
+        if (accessToken == 0 && retriveDoctorInfor() == null)
+            showLoginDialog();
+        else {
+            Doctor doctor = retriveDoctorInfor();
+            String info = doctor.getName() + " " + doctor.getLastname() + " ";
+            login_activity_doctor_name_tv.setText(login_activity_doctor_name_tv.getText().toString() + " " + info);
+
+            if (dbHelper.didHospitalsSave()) {
+                getAssignedHospital(doctor.getId(), accessToken);
+            } else
+                getHospitals(accessToken);
+        }
+        showOfflineMap();
     }
 
     private void initViews() {
@@ -95,12 +111,6 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
                         } else {
                             showWarning(getString(R.string.please_fill_areas));
                         }
-//                        if (tcKimlikNo == null || passWord == null || tcKimlikNo == "" || passWord == "") {
-//                            showWarning(getString(R.string.please_fill_areas));
-//                        } else {
-//                            dialog.dismiss();
-//                            callRegister(tcKimlikNo, passWord);
-//                        }
                     }
                 })
                 .build();
@@ -135,14 +145,14 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
                     showWarning(getString(R.string.login_error));
                     showLoginDialog();
                     return;
-                }
-                else if(registerResponse.getAccess_token() == null){
+                } else if (registerResponse.getAccess_token() == null) {
                     showWarning(getString(R.string.login_error));
                     showLoginDialog();
                     return;
                 }
                 String accessToken = registerResponse.getAccess_token();
                 int id = registerResponse.getDoctor_id();
+                saveAccessToken(Integer.parseInt(accessToken));
                 callDoktorInfo(id, accessToken);
             }
 
@@ -173,6 +183,7 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
                 progressDialog.dismiss();
                 String info = doctor.getName() + " " + doctor.getLastname() + " ";
                 login_activity_doctor_name_tv.setText(login_activity_doctor_name_tv.getText().toString() + " " + info);
+                saveDoctorInfo(doctor);
                 if (dbHelper.didHospitalsSave()) {
                     getAssignedHospital(doctor.getId(), token);
                 } else
@@ -183,7 +194,6 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
             public void failure(RetrofitError error) {
                 progressDialog.dismiss();
                 showWarning(getString(R.string.general_error));
-                int a = 0;
             }
         });
     }
@@ -205,6 +215,8 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
             public void success(AssigmentResponse assigmentResponse, Response response) {
                 progressDialog.hide();
                 Hospital assignedHospital = dbHelper.getHospitalById(assigmentResponse.getHospital_id());
+                hospitalLatitude = assignedHospital.getLatitude();
+                hospitalLongitute = assignedHospital.getLongitude();
                 login_activity_hospital_name_tv.setText(login_activity_hospital_name_tv.getText() + " " + assignedHospital.getName());
             }
 
@@ -298,9 +310,42 @@ public class MainActivity extends ActionBarActivity implements Switch.OnCheckLis
 
     private void showOnlineMap() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        OnlineMapFragment onlineMapFragment = OnlineMapFragment.newInstance();
+        OnlineMapFragment onlineMapFragment = OnlineMapFragment.newInstance(hospitalLatitude, hospitalLongitute);
         fragmentTransaction.replace(R.id.login_activity_container_fl, onlineMapFragment);
         fragmentTransaction.commit();
+    }
+
+    private void saveDoctorInfo(Doctor doctor) {
+        SharedPreferences mPreferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor mEditor = mPreferences.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(doctor);
+        mEditor.putString("doctor", json);
+        mEditor.commit();
+    }
+
+    private Doctor retriveDoctorInfor() {
+        Doctor doctor = null;
+        SharedPreferences mPreferences = getPreferences(MODE_PRIVATE);
+        String json = mPreferences.getString("doctor", "");
+        Gson gson = new Gson();
+        doctor = gson.fromJson(json, Doctor.class);
+        return doctor;
+    }
+
+    private void saveAccessToken(int token) {
+        accessToken = token;
+        SharedPreferences mPreferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor mEditor = mPreferences.edit();
+        mEditor.putInt("accesToken", token);
+        mEditor.commit();
+    }
+
+    private int retriveAccessToken() {
+        int token = 0;
+        SharedPreferences mPreferences = getPreferences(MODE_PRIVATE);
+        token = mPreferences.getInt("accesToken", 0);
+        return token;
     }
 }
 
