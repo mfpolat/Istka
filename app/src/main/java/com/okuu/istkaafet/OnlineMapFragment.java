@@ -4,8 +4,8 @@ package com.okuu.istkaafet;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Color;
+import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -16,6 +16,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.gc.materialdesign.widgets.SnackBar;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -33,14 +39,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import retrofit.Callback;
+import retrofit.RestAdapter;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 
-public class OnlineMapFragment extends Fragment {
+
+public class OnlineMapFragment extends Fragment implements LocationListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private static View mView;
     private GoogleMap googleMap;
     private LatLng hospitalPosition, userPosition;
     private ArrayList<LatLng> markers;
-    private IstkaLocationListenet mlocListener;
+
+    protected GoogleApiClient mGoogleApiClient;
+    protected LocationRequest mLocationRequest;
+    protected Location mCurrentLocation;
 
     public static OnlineMapFragment newInstance(double hospitalLat, double hospitalLong) {
         OnlineMapFragment fragment = new OnlineMapFragment();
@@ -62,17 +76,8 @@ public class OnlineMapFragment extends Fragment {
             hospitalPosition = new LatLng(hospitalLat, hospitalLong);
             markers.add(hospitalPosition);
         }
-        LocationManager mlocManager;
-        mlocManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
-        mlocListener = new IstkaLocationListenet();
-        //if condition to check if GPS is available
-        if (mlocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            mlocManager.requestSingleUpdate(LocationManager.GPS_PROVIDER,
-                    mlocListener, null);
-        } else if (mlocManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            mlocManager.requestSingleUpdate(
-                    LocationManager.NETWORK_PROVIDER, mlocListener, null);
-        }
+        buildGoogleApiClient();
+        mGoogleApiClient.connect();
     }
 
     @Override
@@ -89,20 +94,116 @@ public class OnlineMapFragment extends Fragment {
         } catch (InflateException e) {
         /* map is already there, just return view as it is */
         }
+
+        ((MainActivity)getActivity()).isOnlineMap = true;
         googleMap = ((MapFragment) getActivity().getFragmentManager().findFragmentById(R.id.googleMapView))
                 .getMap();
+
         googleMap.setMyLocationEnabled(true);
         MarkerOptions options = new MarkerOptions();
         options.position(hospitalPosition);
-        Marker hospitalMarker = googleMap.addMarker(options);
+        if (hospitalPosition.latitude != 0 || hospitalPosition.longitude != 0)
+            googleMap.addMarker(options);
+
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(41.025232, 29.017080), 6.0f));
         return mView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        mGoogleApiClient.disconnect();
+        ((MainActivity)getActivity()).isOnlineMap = false;
+        super.onStop();
+
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        Log.i("XXXXXXXXXXXXXX", "Building GoogleApiClient");
+        mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+        createLocationRequest();
+    }
+
+    protected void createLocationRequest() {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(10000);
+        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
+
+    protected void startLocationUpdates() {
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, mLocationRequest, this);
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        Log.i("XXXXXXXXXX", "Connected to GoogleApiClient");
+        if (mCurrentLocation == null) {
+            mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+
+        }
+        if (mCurrentLocation == null)
+            startLocationUpdates();
+        else {
+            userPosition = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+            if (hospitalPosition.latitude == 0 || hospitalPosition.longitude == 0)
+                showWarning("Hastane konumu alinamadý");
+            else
+                drawRoute(userPosition, hospitalPosition);
+        }
+
+    }
+
+    private void showWarning(String message) {
+        SnackBar snackbar = new SnackBar(getActivity(), message, "", null);
+        snackbar.show();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        mGoogleApiClient.connect();
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        userPosition = new LatLng(location.getLatitude(), location.getLongitude());
+        if (hospitalPosition.latitude == 0 || hospitalPosition.longitude == 0)
+            showWarning("Hastane konumu alnamadý");
+        else
+            drawRoute(userPosition, hospitalPosition);
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        startLocationUpdates();
     }
 
     private void drawRoute(LatLng userLocation, LatLng hospitalLocaion) {
 
+        sendUserLocation();
         String url = getMapsApiDirectionsUrl(userLocation, hospitalLocaion);
         ReadTask downloadTask = new ReadTask();
         downloadTask.execute(url);
+        // fixZoom();
     }
 
     private String getMapsApiDirectionsUrl(LatLng userLotcaion, LatLng hospitalLocation) {
@@ -178,17 +279,13 @@ public class OnlineMapFragment extends Fragment {
                 points = new ArrayList<LatLng>();
                 polyLineOptions = new PolylineOptions();
                 List<HashMap<String, String>> path = routes.get(i);
-
                 for (int j = 0; j < path.size(); j++) {
                     HashMap<String, String> point = path.get(j);
-
                     double lat = Double.parseDouble(point.get("lat"));
                     double lng = Double.parseDouble(point.get("lng"));
                     LatLng position = new LatLng(lat, lng);
-
                     points.add(position);
                 }
-
                 polyLineOptions.addAll(points);
                 polyLineOptions.width(2);
                 polyLineOptions.color(Color.BLUE);
@@ -196,43 +293,28 @@ public class OnlineMapFragment extends Fragment {
             googleMap.addPolyline(polyLineOptions);
         }
     }
-
-    private class IstkaLocationListenet implements LocationListener {
-        @Override
-        public void onLocationChanged(Location location) {
-            try {
-                Double latitude = location.getLatitude();
-                Double longitude = location.getLongitude();
-                userPosition = new LatLng(latitude, longitude);
-                markers.add(userPosition);
-                fixZoom();
-                drawRoute(userPosition, hospitalPosition);
-            } catch (Exception e) {
-                e.printStackTrace();
-
+    private void sendUserLocation(){
+        String token = ((MainActivity)getActivity()).retriveAccessToken();
+        Doctor doctor =((MainActivity)getActivity()).retriveDoctorInfor();
+        int id = doctor.getId();
+        UserLocation userLocation = new UserLocation();
+        userLocation.latitude = String.valueOf(mCurrentLocation.getLatitude());
+        userLocation.longitude = String.valueOf(mCurrentLocation.getLongitude());
+        RestAdapter restAdapter = new RestAdapter.Builder()
+                .setEndpoint(Constants.SERVICE_BASE_URL)
+                .setLogLevel(RestAdapter.LogLevel.FULL)
+                .build();
+        Service service = restAdapter.create(Service.class);
+        service.updateLocation(token, id, userLocation.latitude, userLocation.longitude, new Callback<UpdateLocationResponse>() {
+            @Override
+            public void success(UpdateLocationResponse updateLocationResponse, Response response) {
+                Log.e("XXXXXXXXXXXXXX", " Konum gonderildi" );
             }
-        }
 
-        @Override
-        public void onStatusChanged(String s, int i, Bundle bundle) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String s) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String s) {
-
-        }
-    }
-    private void fixZoom() {
-        LatLngBounds.Builder bc = new LatLngBounds.Builder();
-        for (LatLng item : markers) {
-            bc.include(item);
-        }
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bc.build(), 50));
+            @Override
+            public void failure(RetrofitError error) {
+                Log.e("XXXXXXXXXXXXXX",  " Konum gonderilemedi" );
+            }
+        });
     }
 }

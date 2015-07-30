@@ -28,5 +28,5 @@ dependencies {
     compile 'com.github.navasmdc:MaterialDesign:1.+@aar'
     compile 'com.nineoldandroids:library:2.4.0+'
     compile 'com.squareup.retrofit:retrofit:1.9.0'
-    compile 'com.google.android.gms:play-services:4.2.42'
+    compile 'com.google.android.gms:play-services:6.5.+'
 }
